@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+
+# CMake build directories
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+Makefile
+
+# Ninja / build tool state
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Compiler outputs
+*.o
+*.obj
+*.out
+*.dSYM/
+
+# Local binaries
+main
+lls1_memory_map_starter
+lls1_memory_map_solution
+lls2_bounds_checked_copy_starter
+lls2_bounds_checked_copy_solution
+lls3_length_prefixed_parser_starter
+lls3_length_prefixed_parser_solution
+lls4_ring_buffer_guards_starter
+lls4_ring_buffer_guards_solution
+lls5_mini_fuzzer_starter
+lls5_mini_fuzzer_solution
