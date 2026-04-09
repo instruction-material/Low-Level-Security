@@ -33,24 +33,29 @@ deployment workflows.
 
 ### Part 2
 
-7. `LLS13-Crash-Classification-Lab`
-   Classify toy-program failures by exploitability and write short maintainer
-   notes that distinguish harmless aborts from disclosure or corruption risk.
-8. `LLS14-Stack-Frame-Corruption-Demo-and-Fix`
-   Study how unchecked stack writes can corrupt nearby control data in a local
-   toy frame model, then patch the copy rules and compare outcomes.
-9. `LLS15-Heap-Lifetime-Audit`
-   Review ownership and lifetime mistakes that can become use-after-free or
-   double-free style security bugs, then harden object lifecycle rules.
-10. `LLS16-Mitigation-Comparison-Build-Matrix`
-    Compare toy builds with different mitigation settings and record how NX,
-    PIE, RELRO, stack protectors, and sanitizers change the analysis story.
-11. `LLS17-Disclosure-and-Triage-Report`
-    Audit a disclosure-oriented toy program, patch the leak boundary, and write
-    a short triage note explaining why the issue matters.
-12. `LLS18-Exploit-Informed-Hardening-Capstone`
-    Review a larger intentionally flawed local-only codebase, rank issues by
-    impact, patch them, and deliver an audit packet plus mitigation summary.
+Part 2 keeps the original advanced lab IDs from the source outline: `LLS13`
+through `LLS18`. The original plan did not define a separate `LLS7` through
+`LLS12` block, so the jump is historical rather than an omitted hidden module
+sequence.
+
+- `LLS13-Crash-Classification-Lab`
+  Classify toy-program failures by exploitability and write short maintainer
+  notes that distinguish harmless aborts from disclosure or corruption risk.
+- `LLS14-Stack-Frame-Corruption-Demo-and-Fix`
+  Study how unchecked stack writes can corrupt nearby control data in a local
+  toy frame model, then patch the copy rules and compare outcomes.
+- `LLS15-Heap-Lifetime-Audit`
+  Review ownership and lifetime mistakes that can become use-after-free or
+  double-free style security bugs, then harden object lifecycle rules.
+- `LLS16-Mitigation-Comparison-Build-Matrix`
+  Compare toy builds with different mitigation settings and record how NX,
+  PIE, RELRO, stack protectors, and sanitizers change the analysis story.
+- `LLS17-Disclosure-and-Triage-Report`
+  Audit a disclosure-oriented toy program, patch the leak boundary, and write
+  a short triage note explaining why the issue matters.
+- `LLS18-Exploit-Informed-Hardening-Capstone`
+  Review a larger intentionally flawed local-only codebase, rank issues by
+  impact, patch them, and deliver an audit packet plus mitigation summary.
 
 ## Repository Layout
 
