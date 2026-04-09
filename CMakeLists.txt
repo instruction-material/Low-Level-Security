@@ -66,4 +66,52 @@ lls_add_lab(
 	lls6_capstone_audit_solution
 	"LLS6-Capstone-Audit/solution/main.cpp"
 )
+lls_add_lab(
+	lls13_crash_classification_starter
+	"LLS13-Crash-Classification-Lab/starter/main.cpp"
+)
+lls_add_lab(
+	lls13_crash_classification_solution
+	"LLS13-Crash-Classification-Lab/solution/main.cpp"
+)
+lls_add_lab(
+	lls14_stack_frame_corruption_starter
+	"LLS14-Stack-Frame-Corruption-Demo-and-Fix/starter/main.cpp"
+)
+lls_add_lab(
+	lls14_stack_frame_corruption_solution
+	"LLS14-Stack-Frame-Corruption-Demo-and-Fix/solution/main.cpp"
+)
+lls_add_lab(
+	lls15_heap_lifetime_audit_starter
+	"LLS15-Heap-Lifetime-Audit/starter/main.cpp"
+)
+lls_add_lab(
+	lls15_heap_lifetime_audit_solution
+	"LLS15-Heap-Lifetime-Audit/solution/main.cpp"
+)
+lls_add_lab(
+	lls16_mitigation_matrix_starter
+	"LLS16-Mitigation-Comparison-Build-Matrix/starter/main.cpp"
+)
+lls_add_lab(
+	lls16_mitigation_matrix_solution
+	"LLS16-Mitigation-Comparison-Build-Matrix/solution/main.cpp"
+)
+lls_add_lab(
+	lls17_disclosure_triage_starter
+	"LLS17-Disclosure-and-Triage-Report/starter/main.cpp"
+)
+lls_add_lab(
+	lls17_disclosure_triage_solution
+	"LLS17-Disclosure-and-Triage-Report/solution/main.cpp"
+)
+lls_add_lab(
+	lls18_hardening_capstone_starter
+	"LLS18-Exploit-Informed-Hardening-Capstone/starter/main.cpp"
+)
+lls_add_lab(
+	lls18_hardening_capstone_solution
+	"LLS18-Exploit-Informed-Hardening-Capstone/solution/main.cpp"
+)
 

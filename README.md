@@ -11,6 +11,8 @@ deployment workflows.
 
 ## Course Arc
 
+### Part 1
+
 1. `LLS1-Memory-Map-Inspector`
    Learn how stack, heap, global, static, and read-only storage differ in
    layout and lifetime.
@@ -28,6 +30,27 @@ deployment workflows.
 6. `LLS6-Capstone-Audit`
    Harden a tiny system that combines parser validation and bounded writes, and
    document the audit trail.
+
+### Part 2
+
+7. `LLS13-Crash-Classification-Lab`
+   Classify toy-program failures by exploitability and write short maintainer
+   notes that distinguish harmless aborts from disclosure or corruption risk.
+8. `LLS14-Stack-Frame-Corruption-Demo-and-Fix`
+   Study how unchecked stack writes can corrupt nearby control data in a local
+   toy frame model, then patch the copy rules and compare outcomes.
+9. `LLS15-Heap-Lifetime-Audit`
+   Review ownership and lifetime mistakes that can become use-after-free or
+   double-free style security bugs, then harden object lifecycle rules.
+10. `LLS16-Mitigation-Comparison-Build-Matrix`
+    Compare toy builds with different mitigation settings and record how NX,
+    PIE, RELRO, stack protectors, and sanitizers change the analysis story.
+11. `LLS17-Disclosure-and-Triage-Report`
+    Audit a disclosure-oriented toy program, patch the leak boundary, and write
+    a short triage note explaining why the issue matters.
+12. `LLS18-Exploit-Informed-Hardening-Capstone`
+    Review a larger intentionally flawed local-only codebase, rank issues by
+    impact, patch them, and deliver an audit packet plus mitigation summary.
 
 ## Repository Layout
 
@@ -61,13 +84,13 @@ cmake --build build
 Build a single lab if you only want one executable:
 
 ```bash
-cmake --build build --target lls3_length_prefixed_parser_starter
-./build/lls3_length_prefixed_parser_starter
+cmake --build build --target lls13_crash_classification_starter
+./build/lls13_crash_classification_starter
 ```
 
 On Clang and GCC, the project enables AddressSanitizer and
 UndefinedBehaviorSanitizer by default. The goal is to make debugging reports
-part of the course routine rather than an afterthought.
+part of both course parts rather than an afterthought.
 
 ## Capstone Deliverables
 
