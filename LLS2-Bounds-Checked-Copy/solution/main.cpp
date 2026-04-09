@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <array>
+#include <cctype>
+#include <iomanip>
 #include <iostream>
+#include <string>
 #include <string_view>
 
 enum class CopyStatus {
@@ -14,10 +17,21 @@ struct CopyResult {
 	std::size_t written;
 };
 
+bool containsDisallowedCharacters(std::string_view input) {
+	for (char character : input) {
+		const auto value = static_cast<unsigned char>(character);
+		if (value == '\0' || !std::isprint(value)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 CopyResult copyUserLabel(std::string_view input, std::array<char, 16>& destination) {
 	destination.fill('\0');
 
-	if (input.find('\0') != std::string_view::npos) {
+	if (containsDisallowedCharacters(input)) {
 		return { CopyStatus::InvalidInput, 0 };
 	}
 
@@ -49,18 +63,39 @@ const char* toText(CopyStatus status) {
 	return "unknown";
 }
 
-void runCase(std::string_view input) {
+void printBytes(const std::array<char, 16>& destination) {
+	std::cout << " bytes=[";
+	for (std::size_t index = 0; index < destination.size(); ++index) {
+		if (index != 0) {
+			std::cout << ' ';
+		}
+		std::cout << static_cast<int>(static_cast<unsigned char>(destination[index]));
+	}
+	std::cout << "]";
+}
+
+struct TestCase {
+	std::string_view input;
+	CopyStatus expected;
+};
+
+void runCase(const TestCase& testCase) {
 	std::array<char, 16> destination{};
-	const CopyResult result = copyUserLabel(input, destination);
-	std::cout << "input=\"" << input << "\" status=" << toText(result.status)
+	const CopyResult result = copyUserLabel(testCase.input, destination);
+	std::cout << "input=" << std::quoted(std::string(testCase.input))
+		<< " expected=" << toText(testCase.expected)
+		<< " actual=" << toText(result.status)
 		<< " written=" << result.written
-		<< " output=\"" << destination.data() << "\"\n";
+		<< " output=" << std::quoted(std::string(destination.data()));
+	printBytes(destination);
+	std::cout << "\n";
 }
 
 int main() {
-	runCase("Ada");
-	runCase("SixteenCharText");
-	runCase("A very long label that should not fit");
-	runCase("");
+	runCase({ "Ada", CopyStatus::Ok });
+	runCase({ "SixteenCharText", CopyStatus::Ok });
+	runCase({ "A very long label that should not fit", CopyStatus::Truncated });
+	runCase({ "", CopyStatus::Ok });
+	runCase({ "Line\nBreak", CopyStatus::InvalidInput });
 }
 

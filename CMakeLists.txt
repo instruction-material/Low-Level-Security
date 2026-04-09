@@ -14,44 +14,56 @@ if(LLS_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
 	add_link_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
 endif()
 
-add_executable(
+function(lls_add_lab target source_file)
+	add_executable(${target} "${source_file}")
+endfunction()
+
+lls_add_lab(
 	lls1_memory_map_starter
 	"LLS1-Memory-Map-Inspector/starter/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls1_memory_map_solution
 	"LLS1-Memory-Map-Inspector/solution/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls2_bounds_checked_copy_starter
 	"LLS2-Bounds-Checked-Copy/starter/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls2_bounds_checked_copy_solution
 	"LLS2-Bounds-Checked-Copy/solution/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls3_length_prefixed_parser_starter
 	"LLS3-Length-Prefixed-Parser/starter/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls3_length_prefixed_parser_solution
 	"LLS3-Length-Prefixed-Parser/solution/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls4_ring_buffer_guards_starter
 	"LLS4-Ring-Buffer-Guards/starter/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls4_ring_buffer_guards_solution
 	"LLS4-Ring-Buffer-Guards/solution/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls5_mini_fuzzer_starter
 	"LLS5-Mini-Fuzzer/starter/main.cpp"
 )
-add_executable(
+lls_add_lab(
 	lls5_mini_fuzzer_solution
 	"LLS5-Mini-Fuzzer/solution/main.cpp"
+)
+lls_add_lab(
+	lls6_capstone_audit_starter
+	"LLS6-Capstone-Audit/starter/main.cpp"
+)
+lls_add_lab(
+	lls6_capstone_audit_solution
+	"LLS6-Capstone-Audit/solution/main.cpp"
 )
 

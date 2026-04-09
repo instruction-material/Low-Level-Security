@@ -2,12 +2,14 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 enum class ParseStatus {
 	Ok,
 	TooShort,
 	LengthMismatch,
+	PayloadTooLarge,
 	UnknownCommand,
 	NonPrintable
 };
@@ -17,6 +19,8 @@ struct ParseResult {
 	std::uint8_t command;
 	std::string payload;
 };
+
+constexpr std::size_t kMaxPayloadBytes = 24;
 
 bool isAllowedCommand(std::uint8_t command) {
 	return command == 0x01 || command == 0x02;
@@ -33,6 +37,10 @@ ParseResult parsePacket(const std::vector<std::uint8_t>& bytes) {
 
 	if (actualPayloadLength != declaredLength) {
 		return { ParseStatus::LengthMismatch, command, {} };
+	}
+
+	if (declaredLength > kMaxPayloadBytes) {
+		return { ParseStatus::PayloadTooLarge, command, {} };
 	}
 
 	if (!isAllowedCommand(command)) {
@@ -63,6 +71,8 @@ const char* toText(ParseStatus status) {
 		return "too-short";
 	case ParseStatus::LengthMismatch:
 		return "length-mismatch";
+	case ParseStatus::PayloadTooLarge:
+		return "payload-too-large";
 	case ParseStatus::UnknownCommand:
 		return "unknown-command";
 	case ParseStatus::NonPrintable:
@@ -72,17 +82,43 @@ const char* toText(ParseStatus status) {
 	return "unknown";
 }
 
-void runCase(const std::vector<std::uint8_t>& bytes) {
+const char* commandName(std::uint8_t command) {
+	switch (command) {
+	case 0x01:
+		return "echo";
+	case 0x02:
+		return "label";
+	default:
+		return "unknown";
+	}
+}
+
+std::vector<std::uint8_t> makePacket(std::uint8_t command, std::string_view payload) {
+	std::vector<std::uint8_t> bytes;
+	bytes.reserve(payload.size() + 2);
+	bytes.push_back(static_cast<std::uint8_t>(payload.size()));
+	bytes.push_back(command);
+	for (char character : payload) {
+		bytes.push_back(static_cast<std::uint8_t>(character));
+	}
+	return bytes;
+}
+
+void runCase(const char* label, const std::vector<std::uint8_t>& bytes) {
 	const ParseResult result = parsePacket(bytes);
-	std::cout << "status=" << toText(result.status)
+	std::cout << label
+		<< " status=" << toText(result.status)
 		<< " command=" << static_cast<int>(result.command)
+		<< " (" << commandName(result.command) << ")"
 		<< " payload=\"" << result.payload << "\"\n";
 }
 
 int main() {
-	runCase({ 5, 0x01, 'h', 'e', 'l', 'l', 'o' });
-	runCase({ 5, 0x09, 'h', 'e', 'l', 'l', 'o' });
-	runCase({ 4, 0x01, 'o', 'k' });
-	runCase({ 3, 0x02, 'b', '\n', 'd' });
+	runCase("valid        ", makePacket(0x01, "hello"));
+	runCase("unknown cmd  ", makePacket(0x09, "hello"));
+	runCase("bad length   ", { 4, 0x01, 'o', 'k' });
+	runCase("nonprintable ", { 3, 0x02, 'b', '\n', 'd' });
+	runCase("too short    ", { 1 });
+	runCase("too large    ", makePacket(0x01, std::string(25, 'A')));
 }
 
