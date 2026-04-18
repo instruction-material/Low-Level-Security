@@ -1,7 +1,7 @@
-# Applied Studio 10: module 4 information disclosure and memory obser supplemental 3
+# Applied Studio 10: module 4 information disclosure and memory observation supplemental 2
 
 Course: Low Level Security
-Module: Applied Studio 10: module 4 information disclosure and memory obser supplemental 3
+Module: Applied Studio 10: module 4 information disclosure and memory observation supplemental 2
 
 Use the starter folder first. The starter is intentionally incomplete, and the solution shows one clean way to finish the same build after the student has worked through it.
 
