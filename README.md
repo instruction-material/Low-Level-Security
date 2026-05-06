@@ -1,5 +1,16 @@
 # Low Level Security
 
+This repo is the canonical material source for the Low Level Security course
+family in the live classes catalog:
+
+- Low Level Security
+- Low Level Security Part 2
+- Rust Systems Security
+
+The old standalone local Part 2 and Rust folders were exact duplicates and are
+not canonical sources. Keep defensive C/C++ and Rust systems-security labs here
+unless the public catalog is changed to point at separate published repos.
+
 This repository contains the hands-on lab code for the Low Level Security
 course. The course is defensive by design: students inspect toy programs,
 reason about memory and input handling, fix unsafe assumptions, and prove those
