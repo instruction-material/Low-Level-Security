@@ -4,6 +4,10 @@
 #include <string>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 struct Session {
 	std::string owner;
 	bool privileged = false;

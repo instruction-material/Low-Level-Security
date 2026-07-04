@@ -3,6 +3,10 @@
 #include <string>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 enum class CrashClass {
 	HarmlessAbort,
 	DenialOfService,

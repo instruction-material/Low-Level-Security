@@ -6,6 +6,10 @@
 #include <string>
 #include <string_view>
 
+/****************
+*   SOLUTION   *
+****************/
+
 enum class CopyStatus {
 	Ok,
 	Truncated,

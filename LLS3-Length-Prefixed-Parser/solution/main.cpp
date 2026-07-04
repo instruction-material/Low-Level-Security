@@ -5,6 +5,10 @@
 #include <string_view>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 enum class ParseStatus {
 	Ok,
 	TooShort,

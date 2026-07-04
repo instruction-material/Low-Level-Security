@@ -7,6 +7,10 @@
 #include <string_view>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 enum class HandleStatus {
 	Ok,
 	TooShort,

@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 int gGlobalCounter = 7;
 static int gStaticCounter = 11;
 const char gReadOnlyLabel[] = "lls";

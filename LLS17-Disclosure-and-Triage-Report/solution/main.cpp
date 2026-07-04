@@ -4,6 +4,10 @@
 #include <string>
 #include <string_view>
 
+/****************
+*   SOLUTION   *
+****************/
+
 constexpr std::size_t kPacketBytes = 24;
 
 struct PublicPacket {

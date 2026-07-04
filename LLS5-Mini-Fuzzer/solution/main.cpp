@@ -7,6 +7,10 @@
 #include <string>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 enum class ParseStatus {
 	Ok,
 	TooShort,

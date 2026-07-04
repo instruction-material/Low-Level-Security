@@ -4,6 +4,10 @@
 #include <iostream>
 #include <vector>
 
+/****************
+*   SOLUTION   *
+****************/
+
 class ByteRingBuffer {
 public:
 	bool push(const std::vector<std::uint8_t>& bytes) {

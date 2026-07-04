@@ -1,6 +1,10 @@
 #include <iostream>
 #include <string>
 
+/****************
+*   SOLUTION   *
+****************/
+
 #ifndef __has_feature
 #define __has_feature(feature) 0
 #endif

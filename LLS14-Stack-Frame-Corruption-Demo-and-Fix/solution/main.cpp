@@ -3,6 +3,10 @@
 #include <iostream>
 #include <string_view>
 
+/****************
+*   SOLUTION   *
+****************/
+
 constexpr std::size_t kBufferBytes = 12;
 constexpr std::size_t kShadowBytes = 8;
 constexpr std::size_t kFrameBytes = kBufferBytes + kShadowBytes;
