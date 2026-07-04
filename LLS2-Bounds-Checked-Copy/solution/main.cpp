@@ -1,3 +1,9 @@
+/**************************
+*   CODING STANDARD   *
+**************************/
+
+// Use named constants, descriptive names, and purpose comments before nontrivial scopes
+
 #include <algorithm>
 #include <array>
 #include <cctype>

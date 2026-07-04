@@ -1,3 +1,9 @@
+/**************************
+*   CODING STANDARD   *
+**************************/
+
+// Use named constants, descriptive names, and purpose comments before nontrivial scopes
+
 #include <cctype>
 #include <cstdint>
 #include <iomanip>
