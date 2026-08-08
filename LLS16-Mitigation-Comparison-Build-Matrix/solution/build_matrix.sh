@@ -29,4 +29,3 @@ echo "=== comparison build ==="
 
 echo
 echo "Record PIE, ASan, stack protector, and fortify differences in your matrix."
-

@@ -6,108 +6,107 @@
 #include <vector>
 
 enum class ParseStatus {
-	Ok,
-	TooShort,
-	LengthMismatch,
-	PayloadTooLarge,
-	UnknownCommand,
-	NonPrintable
+    Ok,
+    TooShort,
+    LengthMismatch,
+    PayloadTooLarge,
+    UnknownCommand,
+    NonPrintable
 };
 
 struct ParseResult {
-	ParseStatus status;
-	std::uint8_t command;
-	std::string payload;
+    ParseStatus status;
+    std::uint8_t command;
+    std::string payload;
 };
 
 constexpr std::size_t kMaxPayloadBytes = 24;
 
 bool isAllowedCommand(std::uint8_t command) {
-	return command == 0x01 || command == 0x02;
+    return command == 0x01 || command == 0x02;
 }
 
 ParseResult parsePacket(const std::vector<std::uint8_t>& bytes) {
-	if (bytes.size() < 2) {
-		return { ParseStatus::TooShort, 0, {} };
-	}
+    if (bytes.size() < 2) {
+        return {ParseStatus::TooShort, 0, {}};
+    }
 
-	const std::size_t declaredLength = bytes[0];
-	const std::uint8_t command = bytes[1];
-	const std::size_t actualPayloadLength = bytes.size() - 2;
+    const std::size_t declaredLength = bytes[0];
+    const std::uint8_t command = bytes[1];
+    const std::size_t actualPayloadLength = bytes.size() - 2;
 
-	// Packet layout:
-	// bytes[0] -> payload length
-	// bytes[1] -> command byte (allowed: 0x01 and 0x02)
-	// remaining bytes -> printable ASCII payload
-	//
-	// TODO:
-	// 1. Check that the buffer length matches the declared payload length.
-	// 2. Reject payloads above kMaxPayloadBytes.
-	// 3. Reject unknown commands.
-	// 4. Reject non-printable payload bytes.
-	(void) kMaxPayloadBytes;
-	(void) declaredLength;
-	(void) actualPayloadLength;
-	(void) command;
-	return { ParseStatus::UnknownCommand, command, {} };
+    // Packet layout:
+    // bytes[0] -> payload length
+    // bytes[1] -> command byte (allowed: 0x01 and 0x02)
+    // remaining bytes -> printable ASCII payload
+    //
+    // TODO:
+    // 1. Check that the buffer length matches the declared payload length.
+    // 2. Reject payloads above kMaxPayloadBytes.
+    // 3. Reject unknown commands.
+    // 4. Reject non-printable payload bytes.
+    (void)kMaxPayloadBytes;
+    (void)declaredLength;
+    (void)actualPayloadLength;
+    (void)command;
+    return {ParseStatus::UnknownCommand, command, {}};
 }
 
 const char* toText(ParseStatus status) {
-	switch (status) {
-	case ParseStatus::Ok:
-		return "ok";
-	case ParseStatus::TooShort:
-		return "too-short";
-	case ParseStatus::LengthMismatch:
-		return "length-mismatch";
-	case ParseStatus::PayloadTooLarge:
-		return "payload-too-large";
-	case ParseStatus::UnknownCommand:
-		return "unknown-command";
-	case ParseStatus::NonPrintable:
-		return "non-printable";
-	}
+    switch (status) {
+    case ParseStatus::Ok:
+        return "ok";
+    case ParseStatus::TooShort:
+        return "too-short";
+    case ParseStatus::LengthMismatch:
+        return "length-mismatch";
+    case ParseStatus::PayloadTooLarge:
+        return "payload-too-large";
+    case ParseStatus::UnknownCommand:
+        return "unknown-command";
+    case ParseStatus::NonPrintable:
+        return "non-printable";
+    }
 
-	return "unknown";
+    return "unknown";
 }
 
 const char* commandName(std::uint8_t command) {
-	switch (command) {
-	case 0x01:
-		return "echo";
-	case 0x02:
-		return "label";
-	default:
-		return "unknown";
-	}
+    switch (command) {
+    case 0x01:
+        return "echo";
+    case 0x02:
+        return "label";
+    default:
+        return "unknown";
+    }
 }
 
-std::vector<std::uint8_t> makePacket(std::uint8_t command, std::string_view payload) {
-	std::vector<std::uint8_t> bytes;
-	bytes.reserve(payload.size() + 2);
-	bytes.push_back(static_cast<std::uint8_t>(payload.size()));
-	bytes.push_back(command);
-	for (char character : payload) {
-		bytes.push_back(static_cast<std::uint8_t>(character));
-	}
-	return bytes;
+std::vector<std::uint8_t> makePacket(std::uint8_t command,
+                                     std::string_view payload) {
+    std::vector<std::uint8_t> bytes;
+    bytes.reserve(payload.size() + 2);
+    bytes.push_back(static_cast<std::uint8_t>(payload.size()));
+    bytes.push_back(command);
+    for (char character : payload) {
+        bytes.push_back(static_cast<std::uint8_t>(character));
+    }
+    return bytes;
 }
 
 void runCase(const char* label, const std::vector<std::uint8_t>& bytes) {
-	const ParseResult result = parsePacket(bytes);
-	std::cout << label
-		<< " status=" << toText(result.status)
-		<< " command=" << static_cast<int>(result.command)
-		<< " (" << commandName(result.command) << ")"
-		<< " payload=\"" << result.payload << "\"\n";
+    const ParseResult result = parsePacket(bytes);
+    std::cout << label << " status=" << toText(result.status)
+              << " command=" << static_cast<int>(result.command) << " ("
+              << commandName(result.command) << ")"
+              << " payload=\"" << result.payload << "\"\n";
 }
 
 int main() {
-	runCase("valid        ", makePacket(0x01, "hello"));
-	runCase("unknown cmd  ", makePacket(0x09, "hello"));
-	runCase("bad length   ", { 4, 0x01, 'o', 'k' });
-	runCase("nonprintable ", { 3, 0x02, 'b', '\n', 'd' });
-	runCase("too short    ", { 1 });
-	runCase("too large    ", makePacket(0x01, std::string(25, 'A')));
+    runCase("valid        ", makePacket(0x01, "hello"));
+    runCase("unknown cmd  ", makePacket(0x09, "hello"));
+    runCase("bad length   ", {4, 0x01, 'o', 'k'});
+    runCase("nonprintable ", {3, 0x02, 'b', '\n', 'd'});
+    runCase("too short    ", {1});
+    runCase("too large    ", makePacket(0x01, std::string(25, 'A')));
 }
-
