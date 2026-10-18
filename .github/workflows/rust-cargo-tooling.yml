@@ -1,0 +1,40 @@
+name: Rust Cargo tooling
+
+on:
+  pull_request:
+    paths:
+      - "RUST-00-cargo-tooling-evidence/**"
+      - "test/verify_rust_cargo_tooling.py"
+      - ".github/workflows/rust-cargo-tooling.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-00-cargo-tooling-evidence/**"
+      - "test/verify_rust_cargo_tooling.py"
+      - ".github/workflows/rust-cargo-tooling.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the recorded course toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Verify both roles and diagnostic outcomes
+        run: python3 test/verify_rust_cargo_tooling.py --proof output/rust-cargo-tooling/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-cargo-tooling
+          path: output/rust-cargo-tooling/
+          if-no-files-found: error
