@@ -133,8 +133,8 @@ rustc --edition=2024 diagnostics/clone-owned.rs -o "$ownership_lab_dir/clone-own
 "$ownership_lab_dir/clone-owned"
 ```
 
-The first two commands should refuse compilation with E0382; the third should
-refuse with E0204. They intentionally do not produce runnable programs. Diagnostic
+The first two commands refuse compilation with E0382; the third refuses with
+E0204. They intentionally do not produce runnable programs. Diagnostic
 wording and spans are observations to record, not outputs to invent. The paired
 fixed programs print packet-42, packet-42, and packet-42|packet-42! respectively,
 each with a final newline, empty stderr and status 0. Complete CHALLENGE: name
