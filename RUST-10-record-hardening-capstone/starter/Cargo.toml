@@ -1,0 +1,4 @@
+[package]
+name = "record_hardening_lab"
+version = "1.0.0"
+edition = "2024"

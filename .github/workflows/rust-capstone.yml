@@ -1,0 +1,65 @@
+name: Rust record hardening capstone evidence
+
+on:
+  pull_request:
+    paths:
+      - "RUST-10-record-hardening-capstone/**"
+      - "test/verify_rust_capstone.py"
+      - "test/verify_rust_capstone_export.py"
+      - ".github/workflows/rust-capstone.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-10-record-hardening-capstone/**"
+      - "test/verify_rust_capstone.py"
+      - "test/verify_rust_capstone_export.py"
+      - ".github/workflows/rust-capstone.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-capstone:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install the recorded native toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Compile and verify both capstone roles
+        run: python3 test/verify_rust_capstone.py --proof output/rust-capstone-native/proof.json
+      - name: Retain exact formatter output on failure
+        if: failure()
+        shell: bash
+        run: |
+          for role in starter solution; do
+            for source in RUST-10-record-hardening-capstone/"$role"/src/*.rs; do
+              relative="${source#RUST-10-record-hardening-capstone/}"
+              destination="output/rust-capstone-native/formatting/$relative"
+              mkdir -p "$(dirname "$destination")"
+              rustfmt --edition 2024 --emit stdout "$source" > "$destination"
+            done
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-capstone-native-evidence
+          path: output/rust-capstone-native/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Repeat the native checks on a plain source export
+        run: python3 test/verify_rust_capstone_export.py --proof output/rust-capstone-exported/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-capstone-exported-evidence
+          path: output/rust-capstone-exported/
+          include-hidden-files: true
+          if-no-files-found: warn
