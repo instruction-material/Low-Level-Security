@@ -100,7 +100,8 @@ not a substitute for exactly-once item accounting or started/joined equality.
 CORE: replace the sequential run with two owned partitions, a capacity-two
 result channel, typed error propagation and a coordinator. Preserve validation,
 sorted IDs and totals. Draw ownership transfers and list every sender owner.
-Add a distinct successful regression with nonconsecutive IDs and zero values.
+The supplied sparse case combines nonconsecutive IDs and zero values. Add a
+separate successful regression and predict its count, total and ordered IDs.
 
 WORKFLOW: continue the same project. Predict empty, cap, failure and pre-cancel
 cases. Prove each started handle is joined on success and error; explain the

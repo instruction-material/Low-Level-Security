@@ -259,6 +259,24 @@ mod tests {
     }
 
     #[test]
+    fn sparse_zero_values_preserve_ids_count_and_total() {
+        let result = run(
+            vec![
+                Job { id: 7, value: 0 },
+                Job { id: 2, value: 65535 },
+                Job { id: 4, value: 0 },
+            ],
+            Mode::Normal,
+        );
+        assert_eq!(
+            result.report.as_ref().unwrap().render(),
+            "count=3 total=65535 ids=2|4|7\n"
+        );
+        assert_eq!(result.lifecycle.received, 3);
+        stopped(&result);
+    }
+
+    #[test]
     fn exact_cap_and_largest_values() {
         let input = (0..MAX_ITEMS)
             .map(|id| Job {

@@ -72,6 +72,8 @@ def run(command, cwd, label, expected=0, env=None, timeout=120):
     return stdout, stderr
 
 
+actual_revision = run(["git", "rev-parse", "HEAD"], ROOT, "actual-source-revision")[0].decode().strip()
+assert actual_revision == os.environ["SOURCE_REVISION"], "Checked-out revision differs from claimed source"
 source_names = run(["git", "ls-files", "--", PACK.name, ".github/workflows/rust-concurrency.yml",
                     "test/verify_rust_concurrency.py"], ROOT, "source-inventory")[0].decode().splitlines()
 assert len(source_names) == len(set(source_names)) == 23
@@ -110,6 +112,12 @@ fn main() {
             }
         }
     }
+    let result = run(vec![Job { id: 7, value: 0 }, Job { id: 2, value: 65535 }, Job { id: 4, value: 0 }], Mode::Normal);
+    let life = &result.lifecycle;
+    let report = result.report.unwrap();
+    println!("sparse {} {} {} {} {} {}", report.total,
+             report.ids.iter().map(usize::to_string).collect::<Vec<_>>().join("|"),
+             life.spawned, life.joined, life.received, life.channel_closed);
     for id in 0..8 {
         let jobs = (0..8).map(|id| Job { id, value: 7 }).collect();
         let result = run(jobs, Mode::FailItem(id));
@@ -141,7 +149,7 @@ with tempfile.TemporaryDirectory(prefix="rust-concurrency-") as temporary:
         assert len(diagnostics) == 4
         run(["rustfmt", "--edition", "2024", "--check", *map(str, diagnostics)], project, role+"-diagnostic-format", env=env)
         run(["cargo", "clippy", "--locked", "--offline", "--all-targets", "--", "-D", "warnings"], project, role+"-clippy", env=env)
-        assert b"16 passed; 0 failed" in run(["cargo", "test", "--locked", "--offline"],project,role+"-tests",env=env)[0]
+        assert b"17 passed; 0 failed" in run(["cargo", "test", "--locked", "--offline"],project,role+"-tests",env=env)[0]
         run(["cargo", "build", "--locked", "--offline"],project,role+"-build",env=env)
         binary = Path(env["CARGO_TARGET_DIR"])/"debug/concurrency_lab"
         assert run([str(binary), "--help"],work,role+"-help",env=env,timeout=30)==(USAGE,b"")
@@ -173,7 +181,7 @@ with tempfile.TemporaryDirectory(prefix="rust-concurrency-") as temporary:
         output, err = run([str(consumer)],work,role+"-consumer-run",env=env,timeout=30)
         assert err == b""
         rows = output.decode().splitlines()
-        assert len(rows) == 63
+        assert len(rows) == 64
         for index, row in enumerate(rows[:54]):
             # Empty IDs form a blank field, preserved by split(" ").
             kind,count,value,reverse,total,ids,spawned,joined,received,closed = row.split(" ")
@@ -183,33 +191,34 @@ with tempfile.TemporaryDirectory(prefix="rust-concurrency-") as temporary:
             assert total == count*value and ids == "|".join(map(str,range(count)))
             assert received == count and spawned == joined == (2 if role=="solution" else 0)
             assert closed == str(role=="solution").lower()
-        for index, row in enumerate(rows[54:62]):
+        assert rows[54].split() == ["sparse", "65535", "2|4|7", "2" if role=="solution" else "0", "2" if role=="solution" else "0", "3", str(role=="solution").lower()]
+        for index, row in enumerate(rows[55:63]):
             kind, id_value, spawned, joined, closed = row.split()
             assert kind == "failed" and int(id_value) == index
             assert spawned == joined == ("2" if role=="solution" else "0")
             assert closed == str(role=="solution").lower()
-        kind,spawned,joined,closed = rows[62].split()
+        kind,spawned,joined,closed = rows[63].split()
         assert kind == "cancelled" and spawned == joined == ("2" if role=="solution" else "0")
         assert closed == str(role=="solution").lower()
         run(["cargo","clean"],project,role+"-clean",env=env)
         assert not binary.exists()
-        assert b"16 passed; 0 failed" in run(["cargo","test","--locked","--offline"],project,role+"-clean-tests",env=env)[0]
+        assert b"17 passed; 0 failed" in run(["cargo","test","--locked","--offline"],project,role+"-clean-tests",env=env)[0]
         run(["cargo","build","--locked","--offline"],project,role+"-clean-build",env=env)
         assert run([str(binary),"--case","valid"],work,role+"-clean-valid",env=env,timeout=30)==cases["valid"][:2]
         assert {p.relative_to(project):p.read_bytes() for p in project.rglob("*") if p.is_file()}==original
         saved=OUT/role
         saved.mkdir()
         shutil.copyfile(binary,saved/"concurrency_lab")
-        roles.append(dict(role=role,unitTests=16,unitTestsBeforeAndAfterClean=True,sourceAndLockUnchanged=True,
-                          nativeContractCases=63,cliCases=24,usageRefusals=10,compilerRefusals=2,
+        roles.append(dict(role=role,unitTests=17,unitTestsBeforeAndAfterClean=True,sourceAndLockUnchanged=True,
+                          nativeContractCases=64,cliCases=24,usageRefusals=10,compilerRefusals=2,
                           executableSha256=sha(binary.read_bytes()),lifecycleProbeRows=rows,
                           observedProbeElapsedSeconds=next(c["elapsedSeconds"] for c in commands if c["label"]==role+"-consumer-run")))
 assert not work.exists() and all((ROOT/name).read_bytes()==raw for name,raw in source.items())
-proof=dict(sourceRevision=os.environ["SOURCE_REVISION"],compilerVersions=versions,nativeExecuted=True,
+proof=dict(sourceRevision=actual_revision,checkedOutRevision=actual_revision,compilerVersions=versions,nativeExecuted=True,
            ordinaryUser=True,sourceFiles={n:sha(r) for n,r in source.items()},allSourceFilesUnchanged=True,
            temporarySourceCleanup=True,externalDependencyDownloadsDuringChecks=False,
            receiveDeadlineNotWholeProcessGuarantee=True,allSchedulesNotProven=True,
            injectedWorkerErrorNotArbitraryPanicOrHostSpawnFailure=True,
            worksheetCompletionNotInferred=True,roles=roles,commands=commands)
 args.proof.write_text(json.dumps(proof,indent=2)+"\n")
-print(json.dumps({"accepted":True,"roles":len(roles),"nativeContractCases":126,"commands":len(commands),"proof":str(args.proof)}))
+print(json.dumps({"accepted":True,"roles":len(roles),"nativeContractCases":128,"commands":len(commands),"proof":str(args.proof)}))
