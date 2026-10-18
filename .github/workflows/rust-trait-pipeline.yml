@@ -1,0 +1,51 @@
+name: Rust trait-pipeline evidence
+
+on:
+  pull_request:
+    paths:
+      - "RUST-06-trait-pipeline-evidence/**"
+      - "test/verify_rust_trait_pipeline.py"
+      - ".github/workflows/rust-trait-pipeline.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-06-trait-pipeline-evidence/**"
+      - "test/verify_rust_trait_pipeline.py"
+      - ".github/workflows/rust-trait-pipeline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the recorded course toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Verify generic sources, actual pull counts, error contracts and library diagnostics
+        run: python3 test/verify_rust_trait_pipeline.py --proof output/rust-trait-pipeline/proof.json
+      - name: Retain formatter suggestions after a failed validation
+        if: failure()
+        run: |
+          for role in starter solution; do
+            for path in src/lib.rs src/main.rs diagnostics/alternate-source.rs diagnostics/missing-method.rs diagnostics/mutate-live-iterator.rs diagnostics/mutation-after-last-use.rs diagnostics/report-after-owner-drop.rs; do
+              destination="output/rust-trait-pipeline/formatting/$role/$path"
+              mkdir -p "$(dirname "$destination")"
+              rustfmt --edition 2024 --emit stdout "RUST-06-trait-pipeline-evidence/$role/$path" > "$destination"
+            done
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-trait-pipeline-evidence
+          path: output/rust-trait-pipeline/
+          include-hidden-files: true
+          if-no-files-found: error
