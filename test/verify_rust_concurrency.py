@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / "RUST-08-concurrency-evidence"
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--proof", type=Path, required=True)
+parser.add_argument("--source-kind", choices=["checkout","exported-workspace"], default="checkout")
 args = parser.parse_args()
 args.proof = args.proof.resolve()
 assert not args.proof.exists()
@@ -72,13 +73,55 @@ def run(command, cwd, label, expected=0, env=None, timeout=120):
     return stdout, stderr
 
 
-actual_revision = run(["git", "rev-parse", "HEAD"], ROOT, "actual-source-revision")[0].decode().strip()
-assert actual_revision == os.environ["SOURCE_REVISION"], "Checked-out revision differs from claimed source"
-source_names = run(["git", "ls-files", "--", PACK.name, ".github/workflows/rust-concurrency.yml",
-                    "test/verify_rust_concurrency.py"], ROOT, "source-inventory")[0].decode().splitlines()
-assert len(source_names) == len(set(source_names)) == 23
-source = {name: (ROOT / name).read_bytes() for name in source_names}
+def verify_committed_bytes(actual, source):
+    # Compare raw bytes with the selected commit, independently of the index,
+    # clean filters, timestamps, and assume-unchanged flags.
+    listing=run(["git","ls-tree","-rz","--full-tree",actual,"--",*source],ROOT,"committed-source-objects")[0]
+    entries={}
+    for row in listing.split(b"\0"):
+        if not row:
+            continue
+        header,name=row.split(b"\t",1)
+        mode,kind,identity=header.split()
+        assert mode in [b"100644",b"100755"] and kind==b"blob"
+        name=name.decode()
+        assert name not in entries
+        entries[name]=identity.decode()
+    assert entries.keys()==source.keys(),"Committed source paths differ"
+    for name,raw in source.items():
+        identity=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+        assert identity==entries[name],"Source bytes differ from committed revision: "+name
+    return entries
+
+
+
+claimed=os.environ["SOURCE_REVISION"]
+assert len(claimed)==40 and all(c in "0123456789abcdef" for c in claimed)
+expected_names=['.github/workflows/rust-concurrency.yml', 'RUST-08-concurrency-evidence/README.md', 'RUST-08-concurrency-evidence/solution/Cargo.lock', 'RUST-08-concurrency-evidence/solution/Cargo.toml', 'RUST-08-concurrency-evidence/solution/diagnostics/arc-owned.rs', 'RUST-08-concurrency-evidence/solution/diagnostics/cell-not-sync.rs', 'RUST-08-concurrency-evidence/solution/diagnostics/rc-not-send.rs', 'RUST-08-concurrency-evidence/solution/diagnostics/scoped-shared.rs', 'RUST-08-concurrency-evidence/solution/observations.md', 'RUST-08-concurrency-evidence/solution/src/ledger.rs', 'RUST-08-concurrency-evidence/solution/src/lib.rs', 'RUST-08-concurrency-evidence/solution/src/main.rs', 'RUST-08-concurrency-evidence/starter/Cargo.lock', 'RUST-08-concurrency-evidence/starter/Cargo.toml', 'RUST-08-concurrency-evidence/starter/diagnostics/arc-owned.rs', 'RUST-08-concurrency-evidence/starter/diagnostics/cell-not-sync.rs', 'RUST-08-concurrency-evidence/starter/diagnostics/rc-not-send.rs', 'RUST-08-concurrency-evidence/starter/diagnostics/scoped-shared.rs', 'RUST-08-concurrency-evidence/starter/observations.md', 'RUST-08-concurrency-evidence/starter/src/ledger.rs', 'RUST-08-concurrency-evidence/starter/src/lib.rs', 'RUST-08-concurrency-evidence/starter/src/main.rs', 'test/verify_rust_concurrency.py', 'test/verify_rust_concurrency_export.py']
+actual_revision=None
+if args.source_kind=="checkout":
+    actual_revision=run(["git","rev-parse","HEAD"],ROOT,"actual-source-revision")[0].decode().strip()
+    assert actual_revision==claimed,"Checked-out revision differs from claimed source"
+    source_names=run(["git","ls-files","--",PACK.name,".github/workflows/rust-concurrency.yml","test/verify_rust_concurrency.py","test/verify_rust_concurrency_export.py"],ROOT,"source-inventory")[0].decode().splitlines()
+    assert source_names==expected_names
+else:
+    source_names=expected_names
+for name in source_names:
+    cursor=ROOT
+    for part in Path(name).parts:
+        cursor=cursor/part
+        assert not cursor.is_symlink(),"Linked source entry: "+name
+    assert cursor.is_file(),"Missing source entry: "+name
+package_files={name.removeprefix(PACK.name+"/") for name in expected_names if name.startswith(PACK.name+"/")}
+package_dirs={Path(".")}
+for name in package_files:package_dirs.update(Path(name).parents)
+for relative in package_dirs:
+    offset=0 if str(relative)=="." else len(relative.parts)
+    children={Path(name).parts[offset] for name in package_files if Path(name).is_relative_to(relative) and len(Path(name).parts)>offset}
+    assert {path.name for path in (PACK/relative).iterdir()}==children
+source={name:(ROOT/name).read_bytes() for name in source_names}
 assert all(b"\r" not in raw for raw in source.values())
+committed_objects=verify_committed_bytes(actual_revision,source) if args.source_kind=="checkout" else None
 versions = {name: run(command, ROOT, name)[0].decode().strip() for name, command in [
     ("rustc", ["rustc", "--version", "--verbose"]), ("cargo", ["cargo", "--version"]),
     ("rustfmt", ["rustfmt", "--version"]), ("clippy", ["cargo", "clippy", "--version"])]}
@@ -214,7 +257,9 @@ with tempfile.TemporaryDirectory(prefix="rust-concurrency-") as temporary:
                           executableSha256=sha(binary.read_bytes()),lifecycleProbeRows=rows,
                           observedProbeElapsedSeconds=next(c["elapsedSeconds"] for c in commands if c["label"]==role+"-consumer-run")))
 assert not work.exists() and all((ROOT/name).read_bytes()==raw for name,raw in source.items())
-proof=dict(sourceRevision=actual_revision,checkedOutRevision=actual_revision,compilerVersions=versions,nativeExecuted=True,
+assert len(commands)==(111 if args.source_kind=="checkout" else 108)
+proof=dict(sourceKind=args.source_kind,sourceDiscovery="git-index" if args.source_kind=="checkout" else "fixed-filesystem",
+           baseSourceRevision=claimed,repositoryCIProvenanceClaimed=args.source_kind=="checkout",committedSourceObjects=committed_objects,sourceRevision=actual_revision,checkedOutRevision=actual_revision,compilerVersions=versions,nativeExecuted=True,
            ordinaryUser=True,sourceFiles={n:sha(r) for n,r in source.items()},allSourceFilesUnchanged=True,
            temporarySourceCleanup=True,externalDependencyDownloadsDuringChecks=False,
            receiveDeadlineNotWholeProcessGuarantee=True,allSchedulesNotProven=True,

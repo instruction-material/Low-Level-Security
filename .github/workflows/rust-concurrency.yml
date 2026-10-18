@@ -5,12 +5,14 @@ on:
     paths:
       - "RUST-08-concurrency-evidence/**"
       - "test/verify_rust_concurrency.py"
+      - "test/verify_rust_concurrency_export.py"
       - ".github/workflows/rust-concurrency.yml"
   push:
     branches: [main]
     paths:
       - "RUST-08-concurrency-evidence/**"
       - "test/verify_rust_concurrency.py"
+      - "test/verify_rust_concurrency_export.py"
       - ".github/workflows/rust-concurrency.yml"
   workflow_dispatch:
 
@@ -53,3 +55,12 @@ jobs:
           path: output/rust-concurrency/
           include-hidden-files: true
           if-no-files-found: error
+      - name: Verify the plain exported source context and checkout refusals
+        run: python3 test/verify_rust_concurrency_export.py --proof output/rust-concurrency-exported/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-concurrency-exported-evidence
+          path: output/rust-concurrency-exported/
+          include-hidden-files: true
+          if-no-files-found: warn
