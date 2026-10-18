@@ -37,4 +37,5 @@ jobs:
         with:
           name: rust-cargo-tooling
           path: output/rust-cargo-tooling/
+          include-hidden-files: true
           if-no-files-found: error
