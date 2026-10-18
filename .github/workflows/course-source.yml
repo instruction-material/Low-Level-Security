@@ -1,0 +1,36 @@
+name: Course source readiness
+
+on:
+  pull_request:
+    paths:
+      - "COURSE_SOURCE_MANIFEST.md"
+      - "SOURCE_BACKLOG.md"
+      - "verify-course-source.sh"
+      - ".gitattributes"
+      - "RUST-*/**"
+      - ".github/workflows/course-source.yml"
+  push:
+    branches: [main]
+    paths:
+      - "COURSE_SOURCE_MANIFEST.md"
+      - "SOURCE_BACKLOG.md"
+      - "verify-course-source.sh"
+      - ".gitattributes"
+      - "RUST-*/**"
+      - ".github/workflows/course-source.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Check source readiness from the full checkout
+        run: |
+          bash -n verify-course-source.sh
+          ./verify-course-source.sh
