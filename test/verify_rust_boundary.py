@@ -1,4 +1,4 @@
-"""Compile both RSS9 roles and retain bounded native work/lifecycle evidence."""
+"""Compile RSS9 roles and retain exact native contract evidence."""
 import argparse
 import datetime
 import hashlib

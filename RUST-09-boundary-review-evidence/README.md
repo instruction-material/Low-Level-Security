@@ -137,6 +137,48 @@ foreign library, network program or unbounded fuzzer is involved. The rejected
 program is interpreted only under Miri; its observed value is never treated
 as a valid ordinary result. Keep its source hash and actual diagnostic together.
 
+## Recorded interpreter evidence
+
+This record comes from [the pinned source revision](https://github.com/instruction-material/Low-Level-Security/tree/ebf8c6d1b8cab2604a87e0f464862223e89a526a/RUST-09-boundary-review-evidence)
+and [its CI run](https://github.com/instruction-material/Low-Level-Security/actions/runs/39129421999).
+The interpreter used `miri 0.1.0 (d0babd8b6b 2026-07-15)` with
+`rustc 1.99.0-nightly (d0babd8b6 2026-07-15)` and `-Zmiri-strict-provenance`.
+The starter's 11 library tests and the reference's 17 library tests passed.
+The single rejected case returned status 1 with empty stdout.
+
+The generated harness used the exact bytes of `diagnostics/miri-dangling.rs`
+as `src/main.rs`. Its source SHA-256 is
+`2a86f76a805aff61ee51c0cf6a819f331bc508c45d2cc1e9ade9556b744cafb7`; the full diagnostic SHA-256 is
+`2f7f729223fb1c81f14fbcf8aa295e1360b4643af1fcf0f191ec443e8189a66e`. The excerpt retains the recorded
+allocation identifier and shows the allocation, deallocation and invalid read:
+
+```text
+error: Undefined Behavior: memory access failed: alloc236 has been freed, so this pointer is dangling
+ --> src/main.rs:7:29
+  |
+7 |     let observed = unsafe { *saved };
+  |                             ^^^^^^ Undefined Behavior occurred here
+  |
+  = help: this indicates a bug in the program: it performed an invalid operation, and caused Undefined Behavior
+  = help: see https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html for further information
+help: alloc236 was allocated here:
+ --> src/main.rs:3:31
+  |
+3 |     let saved = Box::into_raw(Box::new(7_u8));
+  |                               ^^^^^^^^^^^^^^
+help: alloc236 was deallocated here:
+ --> src/main.rs:5:14
+  |
+5 |     unsafe { drop(Box::from_raw(saved)) };
+  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+
+The Box was reconstructed and freed once; the later raw-pointer read violates
+its lifetime requirement. Compare this interpreter refusal with the two E0133
+compile-time refusals. They answer different questions about the same trust
+boundary. This finite record does not certify a foreign implementation or
+unexamined executions.
+
 References: [Rust Book unsafe Rust](https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html),
 [slice contract](https://doc.rust-lang.org/std/slice/fn.from_raw_parts.html),
 [FFI and unwinding](https://doc.rust-lang.org/nomicon/ffi.html),

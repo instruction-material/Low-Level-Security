@@ -1,4 +1,4 @@
-"""Compile both RSS9 roles and retain bounded native work/lifecycle evidence."""
+"""Interpret RSS9 library tests and the single supplied rejected case."""
 import argparse
 import datetime
 import hashlib
