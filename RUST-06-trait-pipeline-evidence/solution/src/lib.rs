@@ -77,7 +77,9 @@ pub fn parse_record(text: &str) -> Result<Record<'_>, ParseError> {
     let (label, value) = text.split_once('=').ok_or(ParseError::MissingSeparator)?;
     if label.is_empty()
         || label.len() > 16
-        || !label.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+        || !label
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
     {
         return Err(ParseError::InvalidLabel);
     }
@@ -117,7 +119,10 @@ pub fn audit<S: RowSource>(source: &S) -> Result<Report<'_>, RowError> {
             total: 0,
         },
         |mut report, (index, text)| {
-            let record = parse_record(text).map_err(|kind| RowError { index: index + 1, kind })?;
+            let record = parse_record(text).map_err(|kind| RowError {
+                index: index + 1,
+                kind,
+            })?;
             report.labels.push(record.label);
             report.total += u128::from(record.value);
             Ok(report)
@@ -130,7 +135,10 @@ pub fn all_records<S: RowSource>(source: &S) -> Vec<Result<Record<'_>, RowError>
         .rows()
         .enumerate()
         .map(|(index, text)| {
-            parse_record(text).map_err(|kind| RowError { index: index + 1, kind })
+            parse_record(text).map_err(|kind| RowError {
+                index: index + 1,
+                kind,
+            })
         })
         .collect()
 }
@@ -147,7 +155,10 @@ mod tests {
     fn parser_error_order_is_part_of_the_contract() {
         assert_eq!(parse_record("bad"), Err(ParseError::MissingSeparator));
         assert_eq!(parse_record("=no"), Err(ParseError::InvalidLabel));
-        assert_eq!(parse_record("bad label=65536x"), Err(ParseError::InvalidLabel));
+        assert_eq!(
+            parse_record("bad label=65536x"),
+            Err(ParseError::InvalidLabel)
+        );
         assert_eq!(parse_record("a=65536x"), Err(ParseError::InvalidNumber));
         assert_eq!(parse_record("a=65536"), Err(ParseError::ValueOutOfRange));
     }
@@ -164,7 +175,13 @@ mod tests {
     #[test]
     fn fail_fast_reports_first_one_based_error() {
         let source = memory(&["alpha=7", "bad", "=no"]);
-        assert_eq!(audit(&source), Err(RowError { index: 2, kind: ParseError::MissingSeparator }));
+        assert_eq!(
+            audit(&source),
+            Err(RowError {
+                index: 2,
+                kind: ParseError::MissingSeparator
+            })
+        );
     }
 
     #[test]
@@ -173,7 +190,13 @@ mod tests {
         let rows = all_records(&source);
         assert_eq!(rows.len(), 3);
         assert_eq!(rows[0].as_ref().expect("first valid").label, "alpha");
-        assert_eq!(rows[1], Err(RowError { index: 2, kind: ParseError::MissingSeparator }));
+        assert_eq!(
+            rows[1],
+            Err(RowError {
+                index: 2,
+                kind: ParseError::MissingSeparator
+            })
+        );
         assert_eq!(rows[2].as_ref().expect("last valid").value, 17);
         assert_eq!(source.pulls(), 3);
     }
@@ -187,8 +210,14 @@ mod tests {
         assert!(all_records(&source).is_empty());
         assert_eq!(parse_record("a=00017").expect("leading zeroes").value, 17);
         assert_eq!(parse_record("a=65535").expect("maximum").value, 65535);
-        assert_eq!(parse_record("abcdefghijklmnop=0").expect("16 bytes").label, "abcdefghijklmnop");
-        assert_eq!(parse_record("abcdefghijklmnopq=0"), Err(ParseError::InvalidLabel));
+        assert_eq!(
+            parse_record("abcdefghijklmnop=0").expect("16 bytes").label,
+            "abcdefghijklmnop"
+        );
+        assert_eq!(
+            parse_record("abcdefghijklmnopq=0"),
+            Err(ParseError::InvalidLabel)
+        );
         assert_eq!(parse_record("café=2"), Err(ParseError::InvalidLabel));
         assert_eq!(parse_record("a=+1"), Err(ParseError::InvalidNumber));
     }

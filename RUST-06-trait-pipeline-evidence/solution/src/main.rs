@@ -10,7 +10,11 @@ fn usage() -> ExitCode {
 }
 
 fn main() -> ExitCode {
-    let Ok(mut arguments) = env::args_os().skip(1).map(|arg| arg.into_string()).collect::<Result<Vec<_>, _>>() else {
+    let Ok(mut arguments) = env::args_os()
+        .skip(1)
+        .map(|arg| arg.into_string())
+        .collect::<Result<Vec<_>, _>>()
+    else {
         return usage();
     };
     let (all, rows) = if arguments.is_empty() {
@@ -27,7 +31,12 @@ fn main() -> ExitCode {
     if all {
         for (index, outcome) in all_records(&source).iter().enumerate() {
             match outcome {
-                Ok(record) => println!("row={} label={} value={}", index + 1, record.label, record.value),
+                Ok(record) => println!(
+                    "row={} label={} value={}",
+                    index + 1,
+                    record.label,
+                    record.value
+                ),
                 Err(error) => {
                     println!("row={} error={}", error.index, error.kind.code());
                     failed = true;
@@ -36,7 +45,16 @@ fn main() -> ExitCode {
         }
     } else {
         match audit(&source) {
-            Ok(report) => println!("count={} total={} labels={}", report.labels.len(), report.total, if report.labels.is_empty() { "-".to_owned() } else { report.labels.join("|") }),
+            Ok(report) => println!(
+                "count={} total={} labels={}",
+                report.labels.len(),
+                report.total,
+                if report.labels.is_empty() {
+                    "-".to_owned()
+                } else {
+                    report.labels.join("|")
+                }
+            ),
             Err(error) => {
                 eprintln!("row={} error={}", error.index, error.kind.code());
                 failed = true;
