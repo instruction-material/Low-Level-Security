@@ -263,7 +263,10 @@ mod tests {
         let result = run(
             vec![
                 Job { id: 7, value: 0 },
-                Job { id: 2, value: 65535 },
+                Job {
+                    id: 2,
+                    value: 65535,
+                },
                 Job { id: 4, value: 0 },
             ],
             Mode::Normal,
