@@ -6,8 +6,12 @@ valid record and safely combines most malformed cases as `unclassified`. Its
 unfinished work is to classify failures, justify precedence and build the final
 review packet. The reference demonstrates one complete design.
 
-## Supplied source, preserved verbatim
+## Original course brief
 
+<details>
+<summary>Preserved brief for comparison</summary>
+
+````text
 ## Legacy Tool Hardening Capstone Case
 
 Legacy pseudocode:
@@ -46,6 +50,18 @@ Regression corpus:
 ```
 
 Produce a behavior contract, threat model, Rust 2024 data model, bounded parser, typed errors, test matrix, dependency and lock review, and before-and-after claim table. Keep the implementation safe unless an optional supplied ABI adapter creates a genuine need for a narrow unsafe boundary. For advanced evidence, use either the supplied Miri and fuzz summaries or a fixed local run with explicit case, time, input-size, artifact, stop, and cleanup limits.
+````
+
+</details>
+
+## Current project route
+
+Use the safe starter, reference implementation and native fixed-corpus record
+in `solution/observations.md`. Advanced evidence uses that deterministic native
+corpus or the bounded mutation experiment below. The archived brief's optional
+Miri/fuzz summaries and ABI adapter were not supplied; they are not prerequisites
+or promised artifacts for this implementation.
+
 
 ## Concrete Rust contract
 
