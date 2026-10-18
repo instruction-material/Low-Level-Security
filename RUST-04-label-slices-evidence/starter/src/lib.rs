@@ -131,7 +131,8 @@ mod tests {
                         assert_eq!(bytes.as_deref().ok(), input.as_bytes().get(start..end));
                         assert_eq!(text.as_deref().ok(), input.get(start..end));
                         if end <= input.chars().count() {
-                            let expected: String = input.chars().skip(start).take(end - start).collect();
+                            let expected: String =
+                                input.chars().skip(start).take(end - start).collect();
                             assert_eq!(scalar.unwrap(), expected);
                         } else {
                             assert_eq!(scalar, Err(WindowError::OutOfBounds));
@@ -144,11 +145,20 @@ mod tests {
 
     #[test]
     fn extreme_ranges_return_errors_without_panicking() {
-        assert_eq!(str_window("a", 0, usize::MAX), Err(WindowError::OutOfBounds));
+        assert_eq!(
+            str_window("a", 0, usize::MAX),
+            Err(WindowError::OutOfBounds)
+        );
         assert_eq!(byte_window(b"a", usize::MAX, 0), Err(WindowError::Reversed));
-        assert_eq!(char_window("a", usize::MAX, usize::MAX), Err(WindowError::OutOfBounds));
+        assert_eq!(
+            char_window("a", usize::MAX, usize::MAX),
+            Err(WindowError::OutOfBounds)
+        );
         assert_eq!(WindowError::Reversed.code(), "range-reversed");
         assert_eq!(WindowError::OutOfBounds.code(), "out-of-bounds");
-        assert_eq!(WindowError::NotCharBoundary.code(), "not-character-boundary");
+        assert_eq!(
+            WindowError::NotCharBoundary.code(),
+            "not-character-boundary"
+        );
     }
 }

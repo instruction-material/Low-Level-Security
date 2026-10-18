@@ -34,7 +34,10 @@ fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
     if args.len() != 4 || !matches!(args[0].as_str(), "--window" | "--bytes" | "--chars") {
-        return fail("usage: label_slice_lab [--sanitize text | --window text start end | --bytes text start end | --chars text start end]", 64);
+        return fail(
+            "usage: label_slice_lab [--sanitize text | --window text start end | --bytes text start end | --chars text start end]",
+            64,
+        );
     }
     let (Some(start), Some(end)) = (index(&args[2]), index(&args[3])) else {
         return fail("indices must be ASCII decimal usize values", 64);
