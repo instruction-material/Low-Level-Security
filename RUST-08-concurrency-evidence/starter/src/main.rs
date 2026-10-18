@@ -20,7 +20,15 @@ fn main() -> ExitCode {
     let (jobs, mode) = match case {
         Some("empty") => (Vec::new(), Mode::Normal),
         Some("valid") => (valid(), Mode::Normal),
-        Some("cap") => ((0..8).map(|id| Job { id, value: u16::MAX }).collect(), Mode::Normal),
+        Some("cap") => (
+            (0..8)
+                .map(|id| Job {
+                    id,
+                    value: u16::MAX,
+                })
+                .collect(),
+            Mode::Normal,
+        ),
         Some("fail") => (valid(), Mode::FailItem(3)),
         Some("cancel") => (valid(), Mode::CancelBeforeStart),
         Some("duplicate") => (vec![Job { id: 0, value: 1 }; 2], Mode::Normal),

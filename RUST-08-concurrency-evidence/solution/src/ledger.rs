@@ -29,7 +29,10 @@ impl Ledger {
     }
 
     pub fn snapshot(&self) -> Result<Snapshot, RunError> {
-        self.0.lock().map(|state| state.clone()).map_err(|_| RunError::WorkerPanicked)
+        self.0
+            .lock()
+            .map(|state| state.clone())
+            .map_err(|_| RunError::WorkerPanicked)
     }
 }
 
@@ -64,7 +67,15 @@ mod tests {
         });
         let state = ledger.snapshot().unwrap();
         assert_eq!(state.count, state.values.iter().flatten().count());
-        assert_eq!(state.total, state.values.iter().flatten().map(|value| u32::from(*value)).sum::<u32>());
+        assert_eq!(
+            state.total,
+            state
+                .values
+                .iter()
+                .flatten()
+                .map(|value| u32::from(*value))
+                .sum::<u32>()
+        );
         assert_eq!((state.count, state.total), (2, 24));
     }
 
@@ -73,14 +84,20 @@ mod tests {
         let ledger = Ledger::default();
         assert_eq!(ledger.commit(Job { id: 0, value: 7 }), Ok(()));
         let before = ledger.snapshot().unwrap();
-        assert_eq!(ledger.commit(Job { id: 0, value: 17 }), Err(RunError::DuplicateId));
+        assert_eq!(
+            ledger.commit(Job { id: 0, value: 17 }),
+            Err(RunError::DuplicateId)
+        );
         assert_eq!(ledger.snapshot().unwrap(), before);
     }
 
     #[test]
     fn invalid_id_is_a_no_op() {
         let ledger = Ledger::default();
-        assert_eq!(ledger.commit(Job { id: 8, value: 7 }), Err(RunError::InvalidId));
+        assert_eq!(
+            ledger.commit(Job { id: 8, value: 7 }),
+            Err(RunError::InvalidId)
+        );
         assert_eq!(ledger.snapshot().unwrap(), Snapshot::default());
     }
 }

@@ -59,7 +59,11 @@ impl Report {
         let ids = if self.ids.is_empty() {
             "-".into()
         } else {
-            self.ids.iter().map(usize::to_string).collect::<Vec<_>>().join("|")
+            self.ids
+                .iter()
+                .map(usize::to_string)
+                .collect::<Vec<_>>()
+                .join("|")
         };
         format!("count={} total={} ids={ids}\n", self.ids.len(), self.total)
     }
@@ -154,7 +158,10 @@ mod tests {
     #[test]
     fn sorted_report_accounts_for_every_item() {
         let result = run(jobs(), Mode::Normal);
-        assert_eq!(result.report.as_ref().unwrap().render(), "count=2 total=24 ids=0|3\n");
+        assert_eq!(
+            result.report.as_ref().unwrap().render(),
+            "count=2 total=24 ids=0|3\n"
+        );
         assert_eq!(result.lifecycle.received, 2);
         stopped(&result);
     }
@@ -162,13 +169,21 @@ mod tests {
     #[test]
     fn empty_also_closes_and_joins() {
         let result = run(Vec::new(), Mode::Normal);
-        assert_eq!(result.report.as_ref().unwrap().render(), "count=0 total=0 ids=-\n");
+        assert_eq!(
+            result.report.as_ref().unwrap().render(),
+            "count=0 total=0 ids=-\n"
+        );
         stopped(&result);
     }
 
     #[test]
     fn exact_cap_and_largest_values() {
-        let input = (0..MAX_ITEMS).map(|id| Job { id, value: u16::MAX }).collect();
+        let input = (0..MAX_ITEMS)
+            .map(|id| Job {
+                id,
+                value: u16::MAX,
+            })
+            .collect();
         let result = run(input, Mode::Normal);
         assert_eq!(result.report.as_ref().unwrap().total, 524280);
         assert_eq!(result.lifecycle.received, MAX_ITEMS);
