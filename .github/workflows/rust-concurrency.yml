@@ -1,0 +1,54 @@
+name: Rust concurrency evidence
+
+on:
+  pull_request:
+    paths:
+      - "RUST-08-concurrency-evidence/**"
+      - "test/verify_rust_concurrency.py"
+      - ".github/workflows/rust-concurrency.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-08-concurrency-evidence/**"
+      - "test/verify_rust_concurrency.py"
+      - ".github/workflows/rust-concurrency.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the recorded course toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Verify owned work, bounded messages, invariants and joined lifecycles
+        run: python3 test/verify_rust_concurrency.py --proof output/rust-concurrency/proof.json
+      - name: Retain formatter suggestions after a failed validation
+        if: failure()
+        run: |
+          for role in starter solution; do
+            for path in src/lib.rs src/main.rs src/ledger.rs diagnostics/*.rs; do
+              for source in RUST-08-concurrency-evidence/"$role"/$path; do
+                relative="${source#RUST-08-concurrency-evidence/}"
+                destination="output/rust-concurrency/formatting/$relative"
+                mkdir -p "$(dirname "$destination")"
+                rustfmt --edition 2024 --emit stdout "$source" > "$destination"
+              done
+            done
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-concurrency-evidence
+          path: output/rust-concurrency/
+          include-hidden-files: true
+          if-no-files-found: error
