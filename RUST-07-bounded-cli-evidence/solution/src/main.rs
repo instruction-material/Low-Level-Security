@@ -17,6 +17,9 @@ fn execute() -> Result<(), Error> {
 fn main() -> ExitCode {
     match execute() {
         Ok(()) => ExitCode::SUCCESS,
-        Err(error) => { eprint!("{}", error.diagnostic()); ExitCode::from(error.status()) }
+        Err(error) => {
+            eprint!("{}", error.diagnostic());
+            ExitCode::from(error.status())
+        }
     }
 }
