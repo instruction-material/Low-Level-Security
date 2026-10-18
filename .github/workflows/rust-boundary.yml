@@ -1,0 +1,70 @@
+name: Rust boundary review evidence
+
+on:
+  pull_request:
+    paths:
+      - "RUST-09-boundary-review-evidence/**"
+      - "test/verify_rust_boundary.py"
+      - "test/verify_rust_boundary_miri.py"
+      - ".github/workflows/rust-boundary.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-09-boundary-review-evidence/**"
+      - "test/verify_rust_boundary.py"
+      - "test/verify_rust_boundary_miri.py"
+      - ".github/workflows/rust-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Install the recorded native course toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Verify safe baseline, ABI contracts and exact native results
+        run: python3 test/verify_rust_boundary.py --source-kind checkout --proof output/rust-boundary-native/proof.json
+      - name: Retain formatter suggestions after a failed native validation
+        if: failure()
+        run: |
+          for role in starter solution; do
+            for path in src/lib.rs src/main.rs src/bridge.rs 'diagnostics/*.rs'; do
+              for source in RUST-09-boundary-review-evidence/"$role"/$path; do
+                relative="${source#RUST-09-boundary-review-evidence/}"
+                destination="output/rust-boundary-native/formatting/$relative"
+                mkdir -p "$(dirname "$destination")"
+                rustfmt --edition 2024 --emit stdout "$source" > "$destination"
+              done
+            done
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-boundary-native-evidence
+          path: output/rust-boundary-native/
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Install the recorded optional interpreter toolchain
+        run: rustup toolchain install nightly-2026-07-16 --profile minimal --component miri --component rust-src
+      - name: Prepare the Miri sysroot before offline project checks
+        run: cargo +nightly-2026-07-16 miri setup
+      - name: Check valid library tests and the supplied Miri-only rejected case
+        run: python3 test/verify_rust_boundary_miri.py --proof output/rust-boundary-miri/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-boundary-miri-evidence
+          path: output/rust-boundary-miri/
+          include-hidden-files: true
+          if-no-files-found: warn
