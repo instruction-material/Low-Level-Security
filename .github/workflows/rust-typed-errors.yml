@@ -1,0 +1,41 @@
+name: Rust typed-errors evidence
+
+on:
+  pull_request:
+    paths:
+      - "RUST-03-typed-errors-evidence/**"
+      - "test/verify_rust_typed_errors.py"
+      - ".github/workflows/rust-typed-errors.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-03-typed-errors-evidence/**"
+      - "test/verify_rust_typed_errors.py"
+      - ".github/workflows/rust-typed-errors.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the recorded course toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Verify numeric baseline, typed target and compiler refusals
+        run: python3 test/verify_rust_typed_errors.py --proof output/rust-typed-errors/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-typed-errors-evidence
+          path: output/rust-typed-errors/
+          include-hidden-files: true
+          if-no-files-found: error
