@@ -1,0 +1,41 @@
+name: Rust label-slices evidence
+
+on:
+  pull_request:
+    paths:
+      - "RUST-04-label-slices-evidence/**"
+      - "test/verify_rust_label_slices.py"
+      - ".github/workflows/rust-label-slices.yml"
+  push:
+    branches: [main]
+    paths:
+      - "RUST-04-label-slices-evidence/**"
+      - "test/verify_rust_label_slices.py"
+      - ".github/workflows/rust-label-slices.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RUSTUP_TOOLCHAIN: "1.97.1"
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the recorded course toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+      - name: Verify label filtering, range units and deliberate diagnostic failures
+        run: python3 test/verify_rust_label_slices.py --proof output/rust-label-slices/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-label-slices-evidence
+          path: output/rust-label-slices/
+          include-hidden-files: true
+          if-no-files-found: error
