@@ -100,7 +100,10 @@ mod protocol_tests {
 
     #[test]
     fn success_with_an_impossible_sum_is_rejected() {
-        assert_eq!(invoke(&[255; 8], impossible_value), Err(BoundaryError::Protocol));
+        assert_eq!(
+            invoke(&[255; 8], impossible_value),
+            Err(BoundaryError::Protocol)
+        );
     }
 
     #[test]
@@ -112,7 +115,10 @@ mod protocol_tests {
     fn plausible_wrong_sum_needs_the_independent_oracle() {
         assert_eq!(invoke(&[7], plausible_wrong_value), Ok(0));
         assert_eq!(crate::safe_checksum(&[7]), Ok(7));
-        assert_ne!(invoke(&[7], plausible_wrong_value), crate::safe_checksum(&[7]));
+        assert_ne!(
+            invoke(&[7], plausible_wrong_value),
+            crate::safe_checksum(&[7])
+        );
     }
 }
 #[cfg(test)]
@@ -124,7 +130,10 @@ mod raw_tests {
         let bytes = [7, 17];
         let mut output = u32::MAX;
         // SAFETY: the byte array and distinct aligned output live through the call.
-        assert_eq!(unsafe { raw_sum(bytes.as_ptr(), bytes.len(), &mut output) }, 0);
+        assert_eq!(
+            unsafe { raw_sum(bytes.as_ptr(), bytes.len(), &mut output) },
+            0
+        );
         assert_eq!(output, 24);
     }
 
@@ -148,7 +157,10 @@ mod raw_tests {
     fn null_output_is_a_guarded_refusal() {
         let bytes = [7];
         // SAFETY: null output is explicitly guarded; the input is live and readable.
-        assert_eq!(unsafe { raw_sum(bytes.as_ptr(), 1, std::ptr::null_mut()) }, 64);
+        assert_eq!(
+            unsafe { raw_sum(bytes.as_ptr(), 1, std::ptr::null_mut()) },
+            64
+        );
     }
 
     #[test]

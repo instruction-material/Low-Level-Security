@@ -11,7 +11,11 @@ fn main() -> ExitCode {
         println!("{USAGE}");
         return ExitCode::SUCCESS;
     }
-    let case = if args.len() == 2 && args[0] == "--case" { args[1].to_str() } else { None };
+    let case = if args.len() == 2 && args[0] == "--case" {
+        args[1].to_str()
+    } else {
+        None
+    };
     let bytes: &[u8] = match case {
         Some("empty") => &[],
         Some("valid") => &[7, 17],

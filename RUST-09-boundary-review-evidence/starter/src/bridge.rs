@@ -38,7 +38,10 @@ mod raw_tests {
         let bytes = [7, 17];
         let mut output = u32::MAX;
         // SAFETY: the byte array and distinct aligned output live through the call.
-        assert_eq!(unsafe { raw_sum(bytes.as_ptr(), bytes.len(), &mut output) }, 0);
+        assert_eq!(
+            unsafe { raw_sum(bytes.as_ptr(), bytes.len(), &mut output) },
+            0
+        );
         assert_eq!(output, 24);
     }
 
@@ -62,7 +65,10 @@ mod raw_tests {
     fn null_output_is_a_guarded_refusal() {
         let bytes = [7];
         // SAFETY: null output is explicitly guarded; the input is live and readable.
-        assert_eq!(unsafe { raw_sum(bytes.as_ptr(), 1, std::ptr::null_mut()) }, 64);
+        assert_eq!(
+            unsafe { raw_sum(bytes.as_ptr(), 1, std::ptr::null_mut()) },
+            64
+        );
     }
 
     #[test]
