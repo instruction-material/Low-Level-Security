@@ -189,10 +189,21 @@ mod tests {
         let expected = [
             [Ok(()), Err(TransitionError::NeedsReview), Ok(())],
             [Err(TransitionError::AlreadyReviewed), Ok(()), Ok(())],
-            [Err(TransitionError::AlreadyPublished), Err(TransitionError::AlreadyPublished), Err(TransitionError::PublishedCannotReset)],
+            [
+                Err(TransitionError::AlreadyPublished),
+                Err(TransitionError::AlreadyPublished),
+                Err(TransitionError::PublishedCannotReset),
+            ],
         ];
         for (row, initial) in phases.into_iter().enumerate() {
-            for (column, event) in [Event::Review("Bea".to_owned()), Event::Publish, Event::Reset].into_iter().enumerate() {
+            for (column, event) in [
+                Event::Review("Bea".to_owned()),
+                Event::Publish,
+                Event::Reset,
+            ]
+            .into_iter()
+            .enumerate()
+            {
                 let mut session = initial.clone();
                 assert_eq!(session.apply(event), expected[row][column]);
                 if expected[row][column].is_err() {
@@ -214,10 +225,19 @@ mod tests {
     #[test]
     fn invalid_review_is_atomic_and_state_errors_take_precedence() {
         let mut draft = Session::new();
-        assert_eq!(draft.apply(Event::Review(String::new())), Err(TransitionError::InvalidReviewer));
+        assert_eq!(
+            draft.apply(Event::Review(String::new())),
+            Err(TransitionError::InvalidReviewer)
+        );
         assert_eq!(draft, Session::new());
-        assert_eq!(reviewed().apply(Event::Review(String::new())), Err(TransitionError::AlreadyReviewed));
-        assert_eq!(published().apply(Event::Review(String::new())), Err(TransitionError::AlreadyPublished));
+        assert_eq!(
+            reviewed().apply(Event::Review(String::new())),
+            Err(TransitionError::AlreadyReviewed)
+        );
+        assert_eq!(
+            published().apply(Event::Review(String::new())),
+            Err(TransitionError::AlreadyPublished)
+        );
     }
 
     #[test]
@@ -226,8 +246,16 @@ mod tests {
         for reviewed in [false, true] {
             for published in [false, true] {
                 for reviewer in [None, Some("Alex".to_owned())] {
-                    let input = Legacy { reviewed, published, reviewer };
-                    let expected = if reviewed { input.reviewer.is_some() } else { !published && input.reviewer.is_none() };
+                    let input = Legacy {
+                        reviewed,
+                        published,
+                        reviewer,
+                    };
+                    let expected = if reviewed {
+                        input.reviewer.is_some()
+                    } else {
+                        !published && input.reviewer.is_none()
+                    };
                     let parsed = Session::from_legacy(input.clone());
                     assert_eq!(parsed.is_ok(), expected);
                     if let Ok(session) = parsed {
@@ -249,18 +277,40 @@ mod tests {
             assert_eq!(Reviewer::new(name), Err(TransitionError::InvalidReviewer));
         }
         assert!(Reviewer::new(&"é".repeat(17)).is_err());
-        assert_eq!(Reviewer::new(&"🦀".repeat(33)), Err(TransitionError::InvalidReviewer));
+        assert_eq!(
+            Reviewer::new(&"🦀".repeat(33)),
+            Err(TransitionError::InvalidReviewer)
+        );
     }
 
     #[test]
     fn legacy_shape_errors_precede_invalid_reviewer_errors() {
-        assert_eq!(Session::from_legacy(Legacy { reviewed: false, published: true, reviewer: Some(String::new()) }), Err(TransitionError::InvalidLegacyState));
-        assert_eq!(Session::from_legacy(Legacy { reviewed: true, published: false, reviewer: Some(String::new()) }), Err(TransitionError::InvalidReviewer));
+        assert_eq!(
+            Session::from_legacy(Legacy {
+                reviewed: false,
+                published: true,
+                reviewer: Some(String::new())
+            }),
+            Err(TransitionError::InvalidLegacyState)
+        );
+        assert_eq!(
+            Session::from_legacy(Legacy {
+                reviewed: true,
+                published: false,
+                reviewer: Some(String::new())
+            }),
+            Err(TransitionError::InvalidReviewer)
+        );
     }
 
     #[test]
     fn event_sequences_preserve_invariants_and_rejections_preserve_state() {
-        let events = [Event::Review("Bea".to_owned()), Event::Review(String::new()), Event::Publish, Event::Reset];
+        let events = [
+            Event::Review("Bea".to_owned()),
+            Event::Review(String::new()),
+            Event::Publish,
+            Event::Reset,
+        ];
         for initial in [Session::new(), reviewed(), published()] {
             for first in &events {
                 for second in &events {
