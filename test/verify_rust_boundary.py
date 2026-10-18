@@ -75,12 +75,39 @@ def run(command, cwd, label, expected=0, env=None, timeout=120):
 
 
 claimed=os.environ["SOURCE_REVISION"]
+role_names=["Cargo.toml","Cargo.lock","src/lib.rs","src/main.rs","src/bridge.rs","observations.md",
+            "diagnostics/unsafe-call.rs","diagnostics/explicit-call.rs","diagnostics/unsafe-body.rs",
+            "diagnostics/explicit-body.rs","diagnostics/miri-dangling.rs"]
+expected_names=sorted([PACK.name+"/README.md"]+
+                      [PACK.name+"/"+role+"/"+name for role in ["starter","solution"] for name in role_names]+
+                      ["test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py",
+                       "test/verify_rust_boundary_export.py",".github/workflows/rust-boundary.yml"])
+assert len(expected_names)==27
 actual=None
 if args.source_kind=="checkout":
     actual=run(["git","rev-parse","HEAD"],ROOT,"actual-source-revision")[0].decode().strip()
     assert actual==claimed,"Checked-out revision differs from claimed source"
-source_names=run(["git","ls-files","--",PACK.name,"test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py",".github/workflows/rust-boundary.yml"],ROOT,"source-inventory")[0].decode().splitlines()
-assert len(source_names)==len(set(source_names))==26
+    source_names=run(["git","ls-files","--",PACK.name,"test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py","test/verify_rust_boundary_export.py",".github/workflows/rust-boundary.yml"],ROOT,"source-inventory")[0].decode().splitlines()
+    assert source_names==expected_names
+else:
+    source_names=expected_names
+# Every selected path and its in-root ancestors must be regular, non-link input.
+for name in source_names:
+    cursor=ROOT
+    for part in Path(name).parts:
+        cursor=cursor/part
+        assert not cursor.is_symlink(),"Linked source entry: "+name
+    assert cursor.is_file(),"Missing source entry: "+name
+# Reject extra package entries without descending into unknown/generated trees.
+package_files={name.removeprefix(PACK.name+"/") for name in expected_names if name.startswith(PACK.name+"/")}
+package_dirs={Path(".")}
+for name in package_files:
+    package_dirs.update(Path(name).parents)
+for relative in package_dirs:
+    directory=PACK/relative
+    expected_children={Path(name).parts[len(relative.parts) if str(relative)!="." else 0] for name in package_files
+                       if Path(name).is_relative_to(relative) and len(Path(name).parts)>(len(relative.parts) if str(relative)!="." else 0)}
+    assert {path.name for path in directory.iterdir()}==expected_children,"Unexpected package entry: "+str(relative)
 source={name:(ROOT/name).read_bytes() for name in source_names}
 assert all(b"\r" not in raw for raw in source.values())
 for name,raw in source.items():
@@ -169,8 +196,8 @@ with tempfile.TemporaryDirectory(prefix="rust-boundary-native-") as directory:
                           consumerCases=len(corpus),apiResults=len(corpus)*2,cliCases=12,usageRefusals=10,
                           compilerRefusals=2,consumerRows=expected,executableSha256=sha(binary.read_bytes())))
 assert not work.exists() and all((ROOT/name).read_bytes()==raw for name,raw in source.items())
-assert len(commands)==(86 if args.source_kind=="checkout" else 85)
-proof=dict(sourceKind=args.source_kind,sourceRevision=actual,checkedOutRevision=actual,baseSourceRevision=claimed,
+assert len(commands)==(86 if args.source_kind=="checkout" else 84)
+proof=dict(sourceDiscovery="git-index" if args.source_kind=="checkout" else "fixed-filesystem",sourceKind=args.source_kind,sourceRevision=actual,checkedOutRevision=actual,baseSourceRevision=claimed,
            repositoryCIProvenanceClaimed=args.source_kind=="checkout",compilerVersions=versions,nativeExecuted=True,
            ordinaryUser=True,sourceFiles={name:sha(raw) for name,raw in source.items()},allSourceFilesUnchanged=True,
            temporarySourceCleanup=True,externalDependencyDownloadsDuringChecks=False,worksheetCompletionNotInferred=True,

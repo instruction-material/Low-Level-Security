@@ -6,6 +6,7 @@ on:
       - "RUST-09-boundary-review-evidence/**"
       - "test/verify_rust_boundary.py"
       - "test/verify_rust_boundary_miri.py"
+      - "test/verify_rust_boundary_export.py"
       - ".github/workflows/rust-boundary.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "RUST-09-boundary-review-evidence/**"
       - "test/verify_rust_boundary.py"
       - "test/verify_rust_boundary_miri.py"
+      - "test/verify_rust_boundary_export.py"
       - ".github/workflows/rust-boundary.yml"
   workflow_dispatch:
 
@@ -55,6 +57,15 @@ jobs:
           path: output/rust-boundary-native/
           include-hidden-files: true
           if-no-files-found: error
+      - name: Verify a plain exported source packet without Git
+        run: python3 test/verify_rust_boundary_export.py --proof output/rust-boundary-exported/proof.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: rust-boundary-exported-evidence
+          path: output/rust-boundary-exported/
+          include-hidden-files: true
+          if-no-files-found: warn
       - name: Install the recorded optional interpreter toolchain
         run: rustup toolchain install nightly-2026-07-16 --profile minimal --component miri --component rust-src
       - name: Prepare the Miri sysroot before offline project checks

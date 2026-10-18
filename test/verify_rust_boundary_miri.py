@@ -76,8 +76,8 @@ NIGHTLY="nightly-2026-07-16"
 claimed=os.environ["SOURCE_REVISION"]
 actual=run(["git","rev-parse","HEAD"],ROOT,"actual-source-revision")[0].decode().strip()
 assert actual==claimed
-source_names=run(["git","ls-files","--",PACK.name,"test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py",".github/workflows/rust-boundary.yml"],ROOT,"source-inventory")[0].decode().splitlines()
-assert len(source_names)==len(set(source_names))==26
+source_names=run(["git","ls-files","--",PACK.name,"test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py","test/verify_rust_boundary_export.py",".github/workflows/rust-boundary.yml"],ROOT,"source-inventory")[0].decode().splitlines()
+assert len(source_names)==len(set(source_names))==27
 source={name:(ROOT/name).read_bytes() for name in source_names}
 for name,raw in source.items():
     target=OUT/"source"/name
