@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 use std::process::ExitCode;
-use typed_record_lab::{first_record, parse_record, ParseError, Record};
+use typed_record_lab::{ParseError, Record, first_record, parse_record};
 
 fn report(result: Result<Option<Record>, ParseError>) -> ExitCode {
     match result {
