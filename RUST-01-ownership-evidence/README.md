@@ -5,10 +5,7 @@ This pack belongs to RSS1. It builds on the RSS0 Cargo workflow; it introduces
 ownership of String, Vec and Packet values, explicit clones, and scope cleanup.
 
 Both roles contain the same working code and diagnostics. The starter worksheet
-leaves predictions and evidence open; the reference explains them. The task is
-an ownership investigation, not repairing a hidden label-sanitization exercise.
-A running baseline or completed reference worksheet is not evidence that the
-learner has completed the investigation.
+leaves predictions and evidence open; the reference explains them.
 
 ## Files and environment
 
