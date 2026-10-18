@@ -72,11 +72,33 @@ def run(command, cwd, label, expected=0, env=None, timeout=120):
     return stdout, stderr
 
 
+def verify_committed_bytes(actual, source):
+    # Compare raw bytes with the selected commit, independently of the index,
+    # clean filters, timestamps, and assume-unchanged flags.
+    listing=run(["git","ls-tree","-rz","--full-tree",actual,"--",*source],ROOT,"committed-source-objects")[0]
+    entries={}
+    for row in listing.split(b"\0"):
+        if not row:
+            continue
+        header,name=row.split(b"\t",1)
+        mode,kind,identity=header.split()
+        assert mode in [b"100644",b"100755"] and kind==b"blob"
+        name=name.decode()
+        assert name not in entries
+        entries[name]=identity.decode()
+    assert entries.keys()==source.keys(),"Committed source paths differ"
+    for name,raw in source.items():
+        identity=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+        assert identity==entries[name],"Source bytes differ from committed revision: "+name
+    return entries
+
+
 actual=run(["git","rev-parse","HEAD"],ROOT,"actual-source-revision")[0].decode().strip()
 assert actual==os.environ["SOURCE_REVISION"]
 names=run(["git","ls-files","--",PACK.name,"test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py","test/verify_rust_boundary_export.py",".github/workflows/rust-boundary.yml"],ROOT,"source-inventory")[0].decode().splitlines()
 assert len(names)==len(set(names))==27
 source={name:(ROOT/name).read_bytes() for name in names}
+committed_objects=verify_committed_bytes(actual,source)
 with tempfile.TemporaryDirectory(prefix="rust-boundary-git-free-") as directory:
     packet=Path(directory)/"source-packet"
     packet.mkdir()
@@ -102,9 +124,27 @@ with tempfile.TemporaryDirectory(prefix="rust-boundary-git-free-") as directory:
     assert b"not a git repository" in err and not (refused/"proof.json").exists()
     assert not (packet/".git").exists()
     assert {p.relative_to(packet).as_posix():p.read_bytes() for p in packet.rglob("*") if p.is_file()}==source
+# Alter only the owned CI fixture, then restore it even on failure. Each
+# checker must refuse before running Rust or creating successful evidence.
+dirty_refusals=[]
+reading=PACK/"README.md"
+original=reading.read_bytes()
+try:
+    reading.write_bytes(original+b"\nChanged worktree regression fixture.\n")
+    for kind,script in [("native","verify_rust_boundary.py"),("miri","verify_rust_boundary_miri.py"),("export","verify_rust_boundary_export.py")]:
+        refused=OUT/("dirty-checkout-"+kind)
+        _,err=run(["python3",str(ROOT/"test"/script),"--proof",str(refused/"proof.json")],ROOT,"reject-dirty-"+kind,expected=1,timeout=30)
+        assert b"Source bytes differ from committed revision:" in err
+        assert not (refused/"proof.json").exists()
+        events=[json.loads(line) for line in (refused/"processes.jsonl").read_text().splitlines()]
+        assert len(events)==6 and all(event["command"][0]=="git" for event in events)
+        dirty_refusals.append(kind)
+finally:
+    reading.write_bytes(original)
+
 assert not packet.exists() and all((ROOT/name).read_bytes()==raw for name,raw in source.items())
-assert len(commands)==4
-proof=dict(sourceRevision=actual,checkedOutRevision=actual,sourceKind="checkout",ordinaryUser=True,
+assert len(commands)==8
+proof=dict(committedSourceObjects=committed_objects,dirtyCheckoutRefusals=dirty_refusals,sourceRevision=actual,checkedOutRevision=actual,sourceKind="checkout",ordinaryUser=True,
            gitFreePacketValidated=True,exportedNativeCommands=84,gitNotUsedInsideExportValidation=True,
            exportedSourceDiscovery="fixed-filesystem",exportedCheckoutRevision=None,
            exportedRepositoryCIProvenanceClaimed=False,checkoutModeWithoutGitRefused=True,

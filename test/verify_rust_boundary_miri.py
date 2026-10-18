@@ -72,6 +72,27 @@ def run(command, cwd, label, expected=0, env=None, timeout=120):
     return stdout, stderr
 
 
+def verify_committed_bytes(actual, source):
+    # Compare raw bytes with the selected commit, independently of the index,
+    # clean filters, timestamps, and assume-unchanged flags.
+    listing=run(["git","ls-tree","-rz","--full-tree",actual,"--",*source],ROOT,"committed-source-objects")[0]
+    entries={}
+    for row in listing.split(b"\0"):
+        if not row:
+            continue
+        header,name=row.split(b"\t",1)
+        mode,kind,identity=header.split()
+        assert mode in [b"100644",b"100755"] and kind==b"blob"
+        name=name.decode()
+        assert name not in entries
+        entries[name]=identity.decode()
+    assert entries.keys()==source.keys(),"Committed source paths differ"
+    for name,raw in source.items():
+        identity=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+        assert identity==entries[name],"Source bytes differ from committed revision: "+name
+    return entries
+
+
 NIGHTLY="nightly-2026-07-16"
 claimed=os.environ["SOURCE_REVISION"]
 actual=run(["git","rev-parse","HEAD"],ROOT,"actual-source-revision")[0].decode().strip()
@@ -79,6 +100,7 @@ assert actual==claimed
 source_names=run(["git","ls-files","--",PACK.name,"test/verify_rust_boundary.py","test/verify_rust_boundary_miri.py","test/verify_rust_boundary_export.py",".github/workflows/rust-boundary.yml"],ROOT,"source-inventory")[0].decode().splitlines()
 assert len(source_names)==len(set(source_names))==27
 source={name:(ROOT/name).read_bytes() for name in source_names}
+committed_objects=verify_committed_bytes(actual,source)
 for name,raw in source.items():
     target=OUT/"source"/name
     target.parent.mkdir(parents=True,exist_ok=True)
@@ -118,8 +140,8 @@ with tempfile.TemporaryDirectory(prefix="rust-boundary-miri-") as directory:
     assert out==b"" and b"Undefined Behavior" in err and b"freed" in err
     assert {p.relative_to(project):p.read_bytes() for p in project.rglob("*") if p.is_file()}=={Path(name):raw for name,raw in driver.items()}
 assert not work.exists() and all((ROOT/name).read_bytes()==raw for name,raw in source.items())
-assert len(commands)==8
-proof=dict(sourceRevision=actual,checkedOutRevision=actual,sourceKind="checkout",nightly=NIGHTLY,
+assert len(commands)==9
+proof=dict(committedSourceObjects=committed_objects,sourceRevision=actual,checkedOutRevision=actual,sourceKind="checkout",nightly=NIGHTLY,
            compilerVersions=versions,miriExecuted=True,ordinaryUser=True,
            sourceFiles={name:sha(raw) for name,raw in source.items()},allSourceFilesUnchanged=True,
            temporarySourceCleanup=True,projectChecksOffline=True,
@@ -132,4 +154,4 @@ proof=dict(sourceRevision=actual,checkedOutRevision=actual,sourceKind="checkout"
            worksheetCompletionNotInferred=True,allInputsTargetsAndForeignLibrariesNotProven=True,
            commands=commands)
 args.proof.write_text(json.dumps(proof,indent=2)+"\n")
-print(json.dumps({"accepted":True,"commands":8,"miriUnitResults":28,"expectedUBRefusals":1,"proof":str(args.proof)}))
+print(json.dumps({"accepted":True,"commands":9,"miriUnitResults":28,"expectedUBRefusals":1,"proof":str(args.proof)}))

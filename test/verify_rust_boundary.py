@@ -74,6 +74,27 @@ def run(command, cwd, label, expected=0, env=None, timeout=120):
     return stdout, stderr
 
 
+def verify_committed_bytes(actual, source):
+    # Compare raw bytes with the selected commit, independently of the index,
+    # clean filters, timestamps, and assume-unchanged flags.
+    listing=run(["git","ls-tree","-rz","--full-tree",actual,"--",*source],ROOT,"committed-source-objects")[0]
+    entries={}
+    for row in listing.split(b"\0"):
+        if not row:
+            continue
+        header,name=row.split(b"\t",1)
+        mode,kind,identity=header.split()
+        assert mode in [b"100644",b"100755"] and kind==b"blob"
+        name=name.decode()
+        assert name not in entries
+        entries[name]=identity.decode()
+    assert entries.keys()==source.keys(),"Committed source paths differ"
+    for name,raw in source.items():
+        identity=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\0"+raw).hexdigest()
+        assert identity==entries[name],"Source bytes differ from committed revision: "+name
+    return entries
+
+
 claimed=os.environ["SOURCE_REVISION"]
 role_names=["Cargo.toml","Cargo.lock","src/lib.rs","src/main.rs","src/bridge.rs","observations.md",
             "diagnostics/unsafe-call.rs","diagnostics/explicit-call.rs","diagnostics/unsafe-body.rs",
@@ -109,6 +130,7 @@ for relative in package_dirs:
                        if Path(name).is_relative_to(relative) and len(Path(name).parts)>(len(relative.parts) if str(relative)!="." else 0)}
     assert {path.name for path in directory.iterdir()}==expected_children,"Unexpected package entry: "+str(relative)
 source={name:(ROOT/name).read_bytes() for name in source_names}
+committed_objects=verify_committed_bytes(actual,source) if args.source_kind=="checkout" else None
 assert all(b"\r" not in raw for raw in source.values())
 for name,raw in source.items():
     target=OUT/"source"/name
@@ -196,8 +218,8 @@ with tempfile.TemporaryDirectory(prefix="rust-boundary-native-") as directory:
                           consumerCases=len(corpus),apiResults=len(corpus)*2,cliCases=12,usageRefusals=10,
                           compilerRefusals=2,consumerRows=expected,executableSha256=sha(binary.read_bytes())))
 assert not work.exists() and all((ROOT/name).read_bytes()==raw for name,raw in source.items())
-assert len(commands)==(86 if args.source_kind=="checkout" else 84)
-proof=dict(sourceDiscovery="git-index" if args.source_kind=="checkout" else "fixed-filesystem",sourceKind=args.source_kind,sourceRevision=actual,checkedOutRevision=actual,baseSourceRevision=claimed,
+assert len(commands)==(87 if args.source_kind=="checkout" else 84)
+proof=dict(committedSourceObjects=committed_objects,sourceDiscovery="git-index" if args.source_kind=="checkout" else "fixed-filesystem",sourceKind=args.source_kind,sourceRevision=actual,checkedOutRevision=actual,baseSourceRevision=claimed,
            repositoryCIProvenanceClaimed=args.source_kind=="checkout",compilerVersions=versions,nativeExecuted=True,
            ordinaryUser=True,sourceFiles={name:sha(raw) for name,raw in source.items()},allSourceFilesUnchanged=True,
            temporarySourceCleanup=True,externalDependencyDownloadsDuringChecks=False,worksheetCompletionNotInferred=True,
